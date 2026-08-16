@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Celestial Live - Professional Tracker</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loading-window">
+      <div id="loading-text">LOADING ENVIRONMENT</div>
+      <div class="loading-bar-container">
+        <div id="loading-progress"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <div id="page-title">Celestial View</div>
+  <div id="deep-space-label">in Deep Space</div>
+  
+  <button id="btn-toggle-ui" class="toolbar-box">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    </svg>
+  </button>
+  
+  <button id="btn-deep-space-toggle" class="toolbar-box">DS</button>
+  <div id="deep-space-ripple"></div>
+
+  <!-- Live widget -->
+  <div id="live-widget" class="rebooting">
+    <div class="live-row">
+      <span class="live-dot"></span>
+      <span class="live-text">LIVE</span>
+    </div>
+    <div class="live-status-text">REBOOTING</div>
+  </div>
+
+  <!-- Toggle button / UI Controls -->
+  <div id="ui-controls">
+    
+    <div id="utc-clock">
+      <span id="utc-clock-label">UTC</span>
+      <span id="utc-clock-time">--:--:--</span>
+    </div>
+  </div>
+
+  <!-- The 3D Canvas -->
+  <canvas id="app"></canvas>
+
+  <!-- Planet label tooltip -->
+  <div id="planet-label">Earth</div>
+
+  <!-- Marker overlays -->
+  <div id="planet-markers"></div>
+  <div id="apsis-markers"></div>
+
+  <!-- INSPECT DASHBOARD -->
+  <div id="inspect-dashboard" class="dashboard-hidden">
+    <div id="dashboard-minimized" class="minimized-bar">
+      Details
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 6 l7 11 l-7 -3.5 l-7 3.5 z"/>
+        </svg>
+      </span>
+    </div>
+    
+    <!-- Maximized: Panel with sections -->
+    <div id="dashboard-maximized" class="maximized-panel">
+      <div class="panel-header">
+        Details
+        <span class="arrow">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 18 l7 -11 l-7 3.5 l-7 -3.5 z"/>
+          </svg>
+        </span>
+      </div>
+      <div class="panel-body">
+        
+        <!-- Left: Planet Info -->
+        <div class="panel-section">
+          <h3>Celestial Body: <span id="info-name" class="planet-name-title">--</span></h3>
+          
+          <!-- Two-column layout with gap from top -->
+          <div class="dashboard-grid">
+              
+            <!-- LEFT BOX: Celestial View -->
+            <div class="dashboard-box">
+              <p class="dashboard-box-title">CELESTIAL VIEW</p>
+              <div class="info-content info-content-no-padding">
+                <p><span id="label-longitude">Lon</span>: <span id="info-longitude">--</span></p>
+                <p><span id="label-velocity">Vel</span>: <span id="info-velocity">--</span> km/s</p>
+                <p id="row-inclination"><span id="label-inclination">Inc</span>: <span id="info-inclination">--</span></p>
+                <p><span id="label-distance">Sun Dist</span>: <span id="info-distance">--</span> <span id="unit-distance">AU</span></p>
+                <p id="light-time-row"><span id="label-light-time">LT</span>: <span id="info-light-time">--</span></p>
+                <p id="phase-row"><span id="label-phase">Phase</span>: <span id="info-phase">--</span></p>
+              </div>
+            </div>
+              
+            <!-- RIGHT BOX: Observed from Earth -->
+            <div class="dashboard-box">
+              <p class="dashboard-box-title" id="right-box-title">EARTH VIEW</p>
+              <div class="info-content info-content-no-padding">
+                <p id="row-ra"><span id="label-ra">RA</span>: <span id="info-ra">--</span></p>
+                <p id="row-dec"><span id="label-dec">Dec</span>: <span id="info-dec">--</span></p>
+                <p id="row-distance-earth"><span id="label-distance-earth">Earth Dist</span>: <span id="info-distance-earth">--</span></p>
+                <p id="row-elongation"><span id="label-elongation">Elong</span>: <span id="info-elongation">--</span></p>
+                <p id="row-constellation"><span id="label-constellation">Const</span>: <span id="info-constellation">--</span></p>
+                <p id="row-spin" style="display:none;"><span id="label-spin">Spin Angle</span>: <span id="info-earth-spin">--</span>°</p>
+                <p id="row-progress" style="display:none;"><span id="label-progress">Day Length</span>: <span id="info-earth-progress">--</span>%</p>
+                <p id="row-terminator" style="display:none;"><span id="label-terminator">Terminator</span>: <span id="info-earth-terminator">--</span></p>
+                <p id="row-subsolar" style="display:none;"><span id="label-subsolar">Subsolar</span>: <span id="info-earth-subsolar">--</span></p>
+              </div>
+            </div>
+              
+          </div>
+
+          <div class="upcoming-box" id="upcoming-box" style="display:none;">
+            <p class="upcoming-box-title">UPCOMING</p>
+            <div class="upcoming-box-content">
+              <span class="upcoming-label" id="upcoming-event-name">--</span>
+              <span class="upcoming-value" id="upcoming-event-angle"></span>
+              <span class="upcoming-days" id="upcoming-event-days"></span>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="left-action-stack">
+    <div id="toolbar-container">
+      <button id="menu-trigger" class="toolbar-box">
+        <svg class="icon" viewBox="0 0 24 24">
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </button>
+    
+      <div id="toolbar-tray" class="collapsed">
+      
+        <div class="toolbar-item-wrapper">
+          <button id="btn-b1" class="toolbar-box">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2L1 7l11 5 11-5-11-5zM1 12l11 5 11-5M1 17l11 5 11-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div id="popover-b1" class="toolbar-popover hidden">
+            <div class="popover-header">OVERLAYS</div>
+            <div class="popover-grid">
+              <button id="toggle-pointers" class="popover-btn active">POINTERS</button>
+              <button id="toggle-apsis" class="popover-btn">APSIS</button>
+              <button id="toggle-poles" class="popover-btn">POLES</button>
+              <button id="toggle-grid" class="popover-btn">GRID</button>
+              <button id="toggle-orbits" class="popover-btn active">ORBITS</button>
+              <button id="toggle-icons" class="popover-btn active">ICONS</button>
+            </div>
+          </div>
+        </div>
+      
+        <div class="toolbar-item-wrapper">
+          <button id="btn-b2" class="toolbar-box">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div id="popover-b2" class="toolbar-popover hidden">
+            <div class="popover-header">PLANET SIZE</div>
+            <div class="popover-col">
+              <button id="preset2-btn" class="popover-btn">ORIGINAL</button>
+              <button id="preset1-btn" class="popover-btn active">ENLARGED</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar-item-wrapper">
+          <button id="btn-b3" class="toolbar-box">
+            <svg class="icon" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor"/>
+            </svg>
+          </button>
+          <div id="popover-b3" class="toolbar-popover hidden">
+            <div class="popover-header">LIGHTING</div>
+            <div class="popover-col">
+              <button id="lighting-realistic" class="popover-btn">SHADOW</button>
+              <button id="lighting-enhanced" class="popover-btn active">FLOOD</button>
+              <button id="lighting-studio" class="popover-btn">STUDIO</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar-item-wrapper">
+          <button id="btn-fullscreen" class="toolbar-box">
+            <svg id="icon-enter-fs" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+            </svg>
+            <svg id="icon-exit-fs" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+              <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button id="exit-inspect" class="toolbar-box" style="display: none;">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </button>
+    
+    <div class="toolbar-item-wrapper" id="inspect-options-wrapper" style="display: none;">
+      <button id="btn-inspect-options" class="toolbar-box">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" y1="21" x2="4" y2="14"></line>
+          <line x1="4" y1="10" x2="4" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12" y2="3"></line>
+          <line x1="20" y1="21" x2="20" y2="16"></line>
+          <line x1="20" y1="12" x2="20" y2="3"></line>
+          <line x1="1" y1="14" x2="7" y2="14"></line>
+          <line x1="9" y1="8" x2="15" y2="8"></line>
+          <line x1="17" y1="16" x2="23" y2="16"></line>
+        </svg>
+      </button>
+      
+      <div id="popover-inspect-options" class="toolbar-popover hidden">
+        <div class="popover-header">OPTIONS</div>
+        <div class="popover-col">
+          <button id="btn-toggle-autorotate" class="popover-btn active">ROTATE</button>
+          <button id="btn-toggle-apsis" class="popover-btn">APSIS</button>
+          <button id="btn-pin-hud" class="popover-btn">PIN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="hyperspace-overlay">
+    <canvas id="hyperspace-canvas"></canvas>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://esm.sh/three@0.160.0",
+        "three/": "https://esm.sh/three@0.160.0/",
+        "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module" src="./main.js"></script>
+  <div id="hud-container"></div>
+
+  <!-- Pulsar Info Panel -->
+  <div id="pulsar-info-panel" style="display:none;">
+    
+    <div class="pulsar-hud-title-group">
+      <div class="pulsar-hud-main-title">VELA PULSAR</div>
+      <div class="pulsar-hud-sub-title">PSR B0833-45</div>
+    </div>
+
+    <div class="pulsar-hud-dials">
+      
+      <div class="hud-dial-group">
+        <svg viewBox="0 0 100 100" class="dial-svg-wrapper">
+          <circle cx="50" cy="56" r="32" class="hud-svg-circle" />
+          <path id="arc-dist" d="M 12,56 A 38,38 0 0,1 88,56" fill="none" />
+          <text class="dial-label-curved">
+            <textPath href="#arc-dist" startOffset="50%" text-anchor="middle">DISTANCE</textPath>
+          </text>
+        </svg>
+        <div class="hud-dial-content">
+          <span class="dial-val">959</span>
+          <span class="dial-unit">ly</span>
+        </div>
+      </div>
+
+      <div class="hud-dial-group">
+        <svg viewBox="0 0 100 100" class="dial-svg-wrapper">
+          <circle cx="50" cy="56" r="32" class="hud-svg-circle" />
+          <path id="arc-freq" d="M 12,56 A 38,38 0 0,1 88,56" fill="none" />
+          <text class="dial-label-curved">
+            <textPath href="#arc-freq" startOffset="50%" text-anchor="middle">FREQUENCY</textPath>
+          </text>
+        </svg>
+        <div class="hud-dial-content">
+          <span class="dial-val">11.19</span>
+          <span class="dial-unit">Hz</span>
+        </div>
+      </div>
+
+      <div class="hud-dial-group">
+        <svg viewBox="0 0 100 100" class="dial-svg-wrapper">
+          <circle cx="50" cy="56" r="32" class="hud-svg-circle" />
+          <path id="arc-period" d="M 12,56 A 38,38 0 0,1 88,56" fill="none" />
+          <text class="dial-label-curved">
+            <textPath href="#arc-period" startOffset="50%" text-anchor="middle">ROTATION PERIOD</textPath>
+          </text>
+        </svg>
+        <div class="hud-dial-content">
+          <span class="dial-val">0.089</span>
+          <span class="dial-unit">sec</span>
+        </div>
+      </div>
+
+      <div class="hud-dial-group">
+        <svg viewBox="0 0 100 100" class="dial-svg-wrapper">
+          <circle cx="50" cy="56" r="32" class="hud-svg-circle" />
+          <path id="arc-const" d="M 12,56 A 38,38 0 0,1 88,56" fill="none" />
+          <text class="dial-label-curved">
+            <textPath href="#arc-const" startOffset="50%" text-anchor="middle">CONSTELLATION</textPath>
+          </text>
+        </svg>
+        <div class="hud-dial-content single-line">
+          <span class="dial-val">Vela</span>
+        </div>
+      </div>
+
+      <div class="hud-dial-group">
+        <svg viewBox="0 0 100 100" class="dial-svg-wrapper">
+          <circle cx="50" cy="56" r="32" class="hud-svg-circle" />
+          <path id="arc-pulses" d="M 12,56 A 38,38 0 0,1 88,56" fill="none" />
+          <text class="dial-label-curved">
+            <textPath href="#arc-pulses" startOffset="50%" text-anchor="middle">PULSES</textPath>
+          </text>
+        </svg>
+        <div class="hud-dial-content single-line">
+          <span class="dial-val" id="pulsar-pulse-count">0</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
