@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { createBlackHole } from './blackhole.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -182,6 +183,8 @@ const composer = new EffectComposer(renderer);
 composer.addPass(renderScene);
 composer.addPass(bloomPass);
 
+const blackHole = createBlackHole({ renderer, canvas, getLowTier: () => runtimeLowTier })
+
 // Controls
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
@@ -314,6 +317,10 @@ let pointerDownY = 0;
 
 // Deep Space Mode
 let isInDeepSpace = false;
+let deepObject = null;
+let blackHoleActive = null;
+let bhPrepTimer = null;
+let bhSwapTimer = null;
 let deepSpaceCamPos = new THREE.Vector3();
 let deepSpaceCamTarget = new THREE.Vector3();
 let _lastApsisMode = null;
@@ -467,6 +474,10 @@ function enterDeepSpaceMode() {
   
   isInDeepSpace = true;
 
+  deepObject = 'vela';
+  const _l = document.getElementById('deep-space-label');
+  if (_l) _l.textContent = 'in Deep Space';
+
   stateBeforeDeepSpace = {
     polesEnabled,
     iconsEnabled,
@@ -507,6 +518,52 @@ function enterDeepSpaceMode() {
   showPulsarInfo();
 }
 
+function enterBlackHoleMode() {
+  transitionDuration = 2.8;
+
+  const dsBtn = document.getElementById('btn-deep-space-toggle');
+  if (dsBtn) dsBtn.style.display = 'none';
+
+  deepSpaceCamPos.copy(camera.position);
+  deepSpaceCamTarget.copy(controls.target);
+
+  const dir = CYGX1_POS.clone().normalize();
+  const toPos = dir.clone().multiplyScalar(CYGX1_POS.length() - 1000);
+  startTransition(toPos, CYGX1_POS.clone());
+
+  isInDeepSpace = true;
+  deepObject = 'cygx1';
+
+  stateBeforeDeepSpace = {
+    polesEnabled, iconsEnabled, orbitsEnabled,
+    gridVisible: gridHelper ? gridHelper.visible : true
+  };
+  fadeSolarSystem(0);
+
+  controls.target.copy(CYGX1_POS);
+  controls.enablePan = false;
+
+  const exitBtn = document.getElementById('exit-inspect');
+  if (exitBtn) exitBtn.style.display = 'flex';
+
+  const label = document.getElementById('deep-space-label');
+  if (label) { label.textContent = 'in Deep Space'; label.classList.add('active'); }
+
+  markersEnabled = false;
+  pulsarMarkerEnabled = false;
+  const dashboard = document.getElementById('inspect-dashboard');
+  if (dashboard) dashboard.style.display = 'none';
+
+  bhPrepTimer = setTimeout(() => blackHole.prepare(toPos), 400);
+  bhSwapTimer = setTimeout(() => {
+    if (deepObject !== 'cygx1') return;
+    if (blackHole.enter(dir)) {
+      blackHoleActive = true;
+      controls.enabled = false;
+    }
+  }, 3000);
+}
+
 // Exit Deep Space Mode
 function exitDeepSpaceMode() {
 
@@ -518,6 +575,15 @@ function exitDeepSpaceMode() {
   if (dsBtn) dsBtn.style.display = 'block';
   
   isInDeepSpace = false;
+
+  clearTimeout(bhPrepTimer);
+  clearTimeout(bhSwapTimer);
+  if (blackHoleActive) {
+    blackHole.exit();
+    blackHoleActive = false;
+    controls.enabled = true;
+  }
+  deepObject = null;
 
   if (neutronStarCore) neutronStarCore.visible = false;
   if (neutronCoreLight) neutronCoreLight.visible = false;
@@ -1142,6 +1208,14 @@ let stateBeforeDeepSpace = {
 // Pulsar Animation Core
 const NEBULA_CENTER = getVelaPulsarPosition();
 
+function getCygX1Position() {
+  const i = raDecToICRFVector(299.59, 35.20);
+  const v = new THREE.Vector3(-i.x, i.z, i.y);
+  v.applyAxisAngle(new THREE.Vector3(1, 0, 0), -23.4 * THREE.MathUtils.DEG2RAD);
+  return v.multiplyScalar(50000);
+}
+const CYGX1_POS = getCygX1Position();
+
 let neutronStarCore = null;
 let neutronCoreLight = null;
 const NEUTRON_CORE_RADIUS = 25;
@@ -1191,6 +1265,7 @@ const pulsarMarkers = {};
 let pulsarMarkerEnabled = false;
 
 createPulsarMarker();
+createBlackHoleMarker();
 
 const toggleBtn = document.getElementById('toggle-pointers');
 if (toggleBtn) {
@@ -1367,7 +1442,7 @@ function setUIVisible(visible) {
   }
 
   const pulsarPanel = document.getElementById('pulsar-info-panel');
-  if (pulsarPanel && isInDeepSpace) {
+  if (pulsarPanel && isInDeepSpace && deepObject === 'vela') {
     pulsarPanel.style.display = visible ? 'block' : 'none';
   }
 
@@ -1728,24 +1803,19 @@ function updatePlanetMarkers() {
     }
   }
 
-  if (pulsarMarkerEnabled) {
-    const pulsarPos = NEBULA_CENTER;
-    const el = pulsarMarkers['vela-pulsar'];
-    if (el) {
-      _tmpProjected.copy(pulsarPos).project(camera);
-      const onScreen = (_tmpProjected.z > -1 && _tmpProjected.z < 1);
-      if (!onScreen) {
-          el.style.display = 'none';
-      } else {
-        const x = (_tmpProjected.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (-_tmpProjected.y * 0.5 + 0.5) * window.innerHeight;
-        el.style.display = 'flex';
-        el.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
-      }
-    }
-  } else {
-    if (pulsarMarkers['vela-pulsar']) {
-      pulsarMarkers['vela-pulsar'].style.display = 'none';
+    for (const [key, pos] of [['vela-pulsar', NEBULA_CENTER], ['cygx1', CYGX1_POS]]) {
+    const el = pulsarMarkers[key];
+    if (!el) continue;
+    if (!pulsarMarkerEnabled) { el.style.display = 'none'; continue; }
+    _tmpProjected.copy(pos).project(camera);
+    const onScreen = (_tmpProjected.z > -1 && _tmpProjected.z < 1);
+    if (!onScreen) {
+      el.style.display = 'none';
+    } else {
+      const x = (_tmpProjected.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-_tmpProjected.y * 0.5 + 0.5) * window.innerHeight;
+      el.style.display = 'flex';
+      el.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
     }
   }
 }
@@ -2847,6 +2917,8 @@ window.addEventListener('resize', () => {
   composer.setSize(window.innerWidth, window.innerHeight);
   composer.setPixelRatio(currentDpr);
 
+  blackHole.resize(window.innerWidth, window.innerHeight, currentDpr);
+
   const currentBloomDivider = runtimeLowTier ? 2 : 1;
   bloomPass.setSize(
     (window.innerWidth * currentDpr) / currentBloomDivider,
@@ -3013,6 +3085,12 @@ function animate() {
   requestAnimationFrame(animate);
   const dt = clock.getDelta();
   checkRuntimePerformance(dt);
+
+  if (blackHoleActive) {
+    blackHole.update(dt);
+    blackHole.render(dt);
+    return;
+  }
 
   if (moonMesh && moonMesh.userData.targetPos) {
     const lerpfactor = 1 - Math.exp(-5 * dt);
@@ -3344,6 +3422,30 @@ function createPulsarMarker() {
   el.style.top = '0px';
   pulsarMarkers['vela-pulsar'] = el;
     
+}
+
+function createBlackHoleMarker() {
+  if (!markerContainer) return;
+  const el = document.createElement('div');
+  el.className = 'planet-marker blackhole-marker';
+  el.dataset.name = 'cygx1';
+  el.innerHTML = `
+    <div class="marker-label">Cygnus X-1</div>
+    <div class="marker-dot blackhole-dot"></div>
+  `;
+  el.style.cursor = 'pointer';
+  el.style.pointerEvents = 'auto';
+  el.style.zIndex = '1000';
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (isInspecting) return;
+    triggerHyperspaceJump();
+    enterBlackHoleMode();
+  });
+  markerContainer.appendChild(el);
+  el.style.left = '0px';
+  el.style.top = '0px';
+  pulsarMarkers['cygx1'] = el;
 }
 
 function updateStarVisibility() {

@@ -1098,6 +1098,18 @@ background: rgba(232, 232, 232, 0.02);
   margin-top: 2px;
 }
 
+.blackhole-marker .marker-label {
+  color: #ff9a3c !important;
+  font-weight: bold;
+  text-shadow: 0 0 8px #ff9a3c, 0 0 12px #ff5a00;
+}
+
+.blackhole-dot {
+  background: radial-gradient(circle, #ffd08a 0%, #ff7a1a 50%, transparent 100%) !important;
+  box-shadow: 0 0 12px #ff9a3c, 0 0 20px #ff5a00 !important;
+  animation: pulsarPulse 1.5s ease-in-out infinite;
+}
+
 :fullscreen #btn-toggle-ui,
 :-webkit-full-screen #btn-toggle-ui {
   top: 14px;
