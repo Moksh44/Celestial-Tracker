@@ -5,7 +5,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-/* Cygnus X-1 real data */ 
+/* Cygnus X-1 real data */
 export const CYGX1 = {
   name: 'Cygnus X-1',
   massSun: 21.2,          // solar masses
